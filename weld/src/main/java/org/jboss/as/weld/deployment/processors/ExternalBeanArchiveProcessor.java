@@ -48,6 +48,7 @@ import org.jboss.as.weld.deployment.PropertyReplacingBeansXmlParser;
 import org.jboss.as.weld.deployment.UrlScanner;
 import org.jboss.as.weld.deployment.WeldAttachments;
 import org.jboss.as.weld.logging.WeldLogger;
+import org.jboss.as.weld.services.bootstrap.WeldEjbServices;
 import org.jboss.as.weld.services.bootstrap.WeldJaxwsInjectionServices;
 import org.jboss.as.weld.services.bootstrap.WeldJpaInjectionServices;
 import org.jboss.modules.DependencySpec;
@@ -56,6 +57,7 @@ import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.Resource;
+import org.jboss.msc.value.InjectedValue;
 import org.jboss.weld.bootstrap.spi.BeansXml;
 import org.jboss.weld.injection.spi.JaxwsInjectionServices;
 import org.jboss.weld.injection.spi.JpaInjectionServices;
@@ -75,6 +77,8 @@ import org.jboss.weld.xml.BeansXmlParser;
 public class ExternalBeanArchiveProcessor implements DeploymentUnitProcessor {
 
     private static final String META_INF_BEANS_XML = "META-INF/beans.xml";
+
+    private final InjectedValue<WeldEjbServices> ejbServicesInjectedValue = new InjectedValue<>();
 
     @Override
     public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
@@ -118,8 +122,10 @@ public class ExternalBeanArchiveProcessor implements DeploymentUnitProcessor {
             EEModuleDescription moduleDesc = deployment.getAttachment(org.jboss.as.ee.component.Attachments.EE_MODULE_DESCRIPTION);
             if(moduleDesc != null) {
                 for(ComponentDescription component : moduleDesc.getComponentDescriptions()) {
-                    if(component instanceof EJBComponentDescription) {
-                        ejbClassName.add(component.getComponentClassName());
+                    if(ejbServicesInjectedValue.getOptionalValue()!=null) {
+                        if (component instanceof EJBComponentDescription) {
+                            ejbClassName.add(component.getComponentClassName());
+                        }
                     }
                 }
             }

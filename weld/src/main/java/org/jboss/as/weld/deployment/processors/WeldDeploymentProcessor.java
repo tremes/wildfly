@@ -177,10 +177,14 @@ public class WeldDeploymentProcessor implements DeploymentUnitProcessor {
 
         final Set<ClassLoader> subDeploymentLoaders = new HashSet<ClassLoader>();
 
-        getJpaDependencies(deploymentUnit, jpaServices);
+        if(parent.getServiceRegistry().getService(ServiceName.of("jboss.jpa")) != null) {
+            getJpaDependencies(deploymentUnit, jpaServices);
+        }
 
         for (DeploymentUnit subDeployment : subDeployments) {
-            getJpaDependencies(deploymentUnit, jpaServices);
+            if(parent.getServiceRegistry().getService(ServiceName.of("jboss.jpa")) != null) {
+                getJpaDependencies(deploymentUnit, jpaServices);
+            }
             final Module subDeploymentModule = subDeployment.getAttachment(Attachments.MODULE);
             if (subDeploymentModule == null) {
                 continue;

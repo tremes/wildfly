@@ -62,6 +62,7 @@ import org.jboss.as.weld.deployment.WeldAttachments;
 import org.jboss.as.weld.discovery.AnnotationType;
 import org.jboss.as.weld.ejb.EjbDescriptorImpl;
 import org.jboss.as.weld.logging.WeldLogger;
+import org.jboss.as.weld.services.bootstrap.WeldEjbServices;
 import org.jboss.as.weld.services.bootstrap.WeldJaxwsInjectionServices;
 import org.jboss.as.weld.services.bootstrap.WeldJpaInjectionServices;
 import org.jboss.as.weld.util.Indices;
@@ -69,6 +70,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.modules.Module;
+import org.jboss.msc.value.InjectedValue;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.weld.bootstrap.spi.BeanDiscoveryMode;
 import org.jboss.weld.bootstrap.spi.BeansXml;
@@ -93,6 +95,7 @@ public class BeanArchiveProcessor implements DeploymentUnitProcessor {
 
     private static final DotName EXTENSION_NAME = DotName.createSimple(Extension.class.getName());
 
+    private static final InjectedValue<WeldEjbServices> ejbServicesInjectedValue = new InjectedValue<>();
     @Override
     public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
@@ -188,8 +191,10 @@ public class BeanArchiveProcessor implements DeploymentUnitProcessor {
                     resourceRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
                 }
                 componentDescriptions.put(resourceRoot, component);
-                if (component instanceof EJBComponentDescription) {
-                    ejbComponentDescriptions.put(resourceRoot, (EJBComponentDescription) component);
+                if(ejbServicesInjectedValue.getOptionalValue() != null) {
+                    if (component instanceof EJBComponentDescription) {
+                        ejbComponentDescriptions.put(resourceRoot, (EJBComponentDescription) component);
+                    }
                 }
             }
         }
@@ -296,12 +301,14 @@ public class BeanArchiveProcessor implements DeploymentUnitProcessor {
                 WeldLogger.DEPLOYMENT_LOGGER.beanArchiveDiscovered(bda);
             }
 
-            Collection<EJBComponentDescription> ejbComponents = components.ejbComponentDescriptions.get(resourceRoot);
+            if(ejbServicesInjectedValue.getOptionalValue()!=null) {
+                Collection<EJBComponentDescription> ejbComponents = components.ejbComponentDescriptions.get(resourceRoot);
 
-            // register EJBs with the BDA
-            for (EJBComponentDescription ejb : ejbComponents) {
-                bda.addEjbDescriptor(new EjbDescriptorImpl<Object>(ejb, bda, reflectionIndex));
-                bda.addBeanClass(ejb.getComponentClassName());
+                // register EJBs with the BDA
+                for (EJBComponentDescription ejb : ejbComponents) {
+                    bda.addEjbDescriptor(new EjbDescriptorImpl<Object>(ejb, bda, reflectionIndex));
+                    bda.addBeanClass(ejb.getComponentClassName());
+                }
             }
 
             return bda;

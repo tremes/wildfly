@@ -27,14 +27,17 @@ import org.jboss.as.ejb3.component.EJBComponentDescription;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.as.web.common.WebComponentDescription;
+import org.jboss.as.weld.services.bootstrap.WeldEjbServices;
+import org.jboss.msc.value.InjectedValue;
 
 /**
  * Various utilities for working with WildFly APIs
  *
  * @author Jozef Hartinger
- *
  */
 public class Utils {
+
+    private static final InjectedValue<WeldEjbServices> ejbServicesInjectedValue = new InjectedValue<>();
 
     private Utils() {
     }
@@ -63,7 +66,11 @@ public class Utils {
     }
 
     public static boolean isComponentWithView(ComponentDescription component) {
-        return (component instanceof EJBComponentDescription) || (component instanceof ManagedBeanComponentDescription);
+        if (ejbServicesInjectedValue.getOptionalValue() != null) {
+            return (component instanceof EJBComponentDescription) || (component instanceof ManagedBeanComponentDescription);
+        } else {
+            return component instanceof ManagedBeanComponentDescription;
+        }
     }
 
     public static void registerAsComponent(String listener, DeploymentUnit deploymentUnit) {
