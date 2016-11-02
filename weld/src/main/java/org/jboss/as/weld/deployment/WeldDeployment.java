@@ -61,7 +61,6 @@ import org.wildfly.security.manager.WildFlySecurityManager;
 public class WeldDeployment implements CDI11Deployment {
 
     public static final String ADDITIONAL_CLASSES_BDA_SUFFIX = ".additionalClasses";
-    public static final String BOOTSTRAP_CLASSLOADER_BDA_ID = "bootstrapBDA" + ADDITIONAL_CLASSES_BDA_SUFFIX;
 
     private final Set<BeanDeploymentArchiveImpl> beanDeploymentArchives;
 
@@ -166,7 +165,7 @@ public class WeldDeployment implements CDI11Deployment {
         Module module = Module.forClass(beanClass);
         String id = null;
         if (module == null) {
-            id = BOOTSTRAP_CLASSLOADER_BDA_ID;
+            id = beanClass.getName();
         } else {
             id = module.getIdentifier() + ADDITIONAL_CLASSES_BDA_SUFFIX;
         }
