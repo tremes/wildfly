@@ -30,8 +30,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.CDI;
 import org.glassfish.enterprise.concurrent.ContextServiceImpl;
 import org.glassfish.enterprise.concurrent.ManagedThreadFactoryImpl;
+import org.jboss.msc.value.InjectedValue;
+import org.jboss.weld.context.RequestContext;
+import org.jboss.weld.context.unbound.UnboundLiteral;
 import org.wildfly.extension.requestcontroller.ControlPoint;
 
 /**
@@ -40,15 +45,18 @@ import org.wildfly.extension.requestcontroller.ControlPoint;
 public class ManagedExecutorServiceImpl extends org.glassfish.enterprise.concurrent.ManagedExecutorServiceImpl {
 
     private final ControlPoint controlPoint;
+    private final InjectedValue<BeanManager> beanManagerInjector;
 
-    public ManagedExecutorServiceImpl(String name, ManagedThreadFactoryImpl managedThreadFactory, long hungTaskThreshold, boolean longRunningTasks, int corePoolSize, int maxPoolSize, long keepAliveTime, TimeUnit keepAliveTimeUnit, long threadLifeTime, ContextServiceImpl contextService, RejectPolicy rejectPolicy, BlockingQueue<Runnable> queue, ControlPoint controlPoint) {
+    public ManagedExecutorServiceImpl(String name, ManagedThreadFactoryImpl managedThreadFactory, long hungTaskThreshold, boolean longRunningTasks, int corePoolSize, int maxPoolSize, long keepAliveTime, TimeUnit keepAliveTimeUnit, long threadLifeTime, ContextServiceImpl contextService, RejectPolicy rejectPolicy, BlockingQueue<Runnable> queue, ControlPoint controlPoint, InjectedValue<BeanManager> beanManagerInjector) {
         super(name, managedThreadFactory, hungTaskThreshold, longRunningTasks, corePoolSize, maxPoolSize, keepAliveTime, keepAliveTimeUnit, threadLifeTime, contextService, rejectPolicy, queue);
         this.controlPoint = controlPoint;
+        this.beanManagerInjector = beanManagerInjector;
     }
 
-    public ManagedExecutorServiceImpl(String name, ManagedThreadFactoryImpl managedThreadFactory, long hungTaskThreshold, boolean longRunningTasks, int corePoolSize, int maxPoolSize, long keepAliveTime, TimeUnit keepAliveTimeUnit, long threadLifeTime, int queueCapacity, ContextServiceImpl contextService, RejectPolicy rejectPolicy, ControlPoint controlPoint) {
+    public ManagedExecutorServiceImpl(String name, ManagedThreadFactoryImpl managedThreadFactory, long hungTaskThreshold, boolean longRunningTasks, int corePoolSize, int maxPoolSize, long keepAliveTime, TimeUnit keepAliveTimeUnit, long threadLifeTime, int queueCapacity, ContextServiceImpl contextService, RejectPolicy rejectPolicy, ControlPoint controlPoint, InjectedValue<BeanManager> beanManagerInjector) {
         super(name, managedThreadFactory, hungTaskThreshold, longRunningTasks, corePoolSize, maxPoolSize, keepAliveTime, keepAliveTimeUnit, threadLifeTime, queueCapacity, contextService, rejectPolicy);
         this.controlPoint = controlPoint;
+        this.beanManagerInjector = beanManagerInjector;
     }
 
     @Override
@@ -63,11 +71,37 @@ public class ManagedExecutorServiceImpl extends org.glassfish.enterprise.concurr
 
     @Override
     public Future<?> submit(Runnable task) {
-        return super.submit(doIdentityWrap(doWrap(task, controlPoint)));
+        return super.submit(doIdentityWrap(doWrap(doCdiWrap(task, obtainRequestContext()), controlPoint)));
     }
 
     @Override
     public void execute(Runnable command) {
         super.execute(doIdentityWrap(doWrap(command, controlPoint)));
+    }
+
+    private RequestContext obtainRequestContext() {
+        return CDI.current().select(RequestContext.class, UnboundLiteral.INSTANCE).get();
+    }
+
+    static Runnable doCdiWrap(Runnable runnable, RequestContext requestContext) {
+        return new CdiRunnable(runnable, requestContext);
+    }
+
+    private static class CdiRunnable implements Runnable {
+
+        private final Runnable cdiTask;
+        private final RequestContext requestContext;
+
+        public CdiRunnable(Runnable task, RequestContext requestContext) {
+            this.cdiTask = task;
+            this.requestContext = requestContext;
+        }
+
+        @Override
+        public void run() {
+            requestContext.activate();
+            cdiTask.run();
+            requestContext.deactivate();
+        }
     }
 }

@@ -39,6 +39,7 @@
         <module name="javax.annotation.api"/>
         <module name="javax.api"/>
         <module name="javax.enterprise.concurrent.api"/>
+        <module name="javax.enterprise.api" optional="true"/>
         <module name="javax.el.api"/>
         <module name="javax.interceptor.api"/>
         <module name="javax.transaction.api"/>
@@ -61,5 +62,7 @@
         <module name="org.jboss.vfs"/>
         <module name="org.picketbox"/>
         <module name="org.wildfly.common"/>
+        <module name="org.jboss.weld.api" optional="true"/>
+        <module name="org.jboss.weld.spi" optional="true"/>
     </dependencies>
 </module>

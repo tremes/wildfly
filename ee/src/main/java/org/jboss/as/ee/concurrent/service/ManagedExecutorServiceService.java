@@ -22,6 +22,7 @@
 
 package org.jboss.as.ee.concurrent.service;
 
+import javax.enterprise.inject.spi.BeanManager;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService;
 import org.glassfish.enterprise.concurrent.ContextServiceImpl;
 import org.glassfish.enterprise.concurrent.ManagedExecutorServiceAdapter;
@@ -62,6 +63,7 @@ public class ManagedExecutorServiceService extends EEConcurrentAbstractService<M
     private final InjectedValue<ContextServiceImpl> contextService = new InjectedValue<>();
     private final AbstractManagedExecutorService.RejectPolicy rejectPolicy;
     private final InjectedValue<RequestController> requestController = new InjectedValue<>();
+    private final InjectedValue<BeanManager> beanManagerInjector = new InjectedValue<>();
     private ControlPoint controlPoint;
 
     /**
@@ -105,7 +107,7 @@ public class ManagedExecutorServiceService extends EEConcurrentAbstractService<M
         if(requestController.getOptionalValue() != null) {
             controlPoint = requestController.getValue().getControlPoint(name, "managed-executor-service");
         }
-        executorService = new ManagedExecutorServiceImpl(name, managedThreadFactory, hungTaskThreshold, longRunningTasks, corePoolSize, maxPoolSize, keepAliveTime, keepAliveTimeUnit, threadLifeTime, queueCapacity, contextService.getOptionalValue(), rejectPolicy, controlPoint);
+        executorService = new ManagedExecutorServiceImpl(name, managedThreadFactory, hungTaskThreshold, longRunningTasks, corePoolSize, maxPoolSize, keepAliveTime, keepAliveTimeUnit, threadLifeTime, queueCapacity, contextService.getOptionalValue(), rejectPolicy, controlPoint, beanManagerInjector);
 
     }
 
@@ -141,5 +143,9 @@ public class ManagedExecutorServiceService extends EEConcurrentAbstractService<M
 
     public InjectedValue<RequestController> getRequestController() {
         return requestController;
+    }
+
+    public InjectedValue<BeanManager> getBeanManagerService() {
+        return beanManagerInjector;
     }
 }

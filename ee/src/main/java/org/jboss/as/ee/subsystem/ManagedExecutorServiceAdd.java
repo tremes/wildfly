@@ -21,6 +21,7 @@
  */
 package org.jboss.as.ee.subsystem;
 
+import javax.enterprise.inject.spi.BeanManager;
 import org.glassfish.enterprise.concurrent.AbstractManagedExecutorService;
 import org.glassfish.enterprise.concurrent.ContextServiceImpl;
 import org.glassfish.enterprise.concurrent.ManagedExecutorServiceAdapter;
@@ -38,6 +39,7 @@ import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.ee.subsystem.ManagedExecutorServiceResourceDefinition.ExecutorQueueValidationStepHandler;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceName;
 import org.wildfly.common.cpu.ProcessorInfo;
 import org.wildfly.extension.requestcontroller.RequestController;
 import org.wildfly.extension.requestcontroller.RequestControllerExtension;
@@ -127,6 +129,8 @@ public class ManagedExecutorServiceAdd extends AbstractAddStepHandler {
         if(rcPresent) {
             serviceBuilder.addDependency(RequestController.SERVICE_NAME, RequestController.class, service.getRequestController());
         }
+
+//        serviceBuilder.addDependency(ServiceName.of("beanmanager"), BeanManager.class, service.getBeanManagerService());
         serviceBuilder.install();
     }
 }
